@@ -2,6 +2,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from learning import models
+from learning import serializers
 import json
 from django.http import JsonResponse
 from django.core import serializers
@@ -23,16 +24,21 @@ def login(request):
 
 
 def register(request):
-    return HttpResponse("Registracia")
+    if request.method == 'POST':
+        serializer = serializers.UserSerializer(data=request.data)
+        registered = serializer.save()
+
+        return JsonResponse(registered, safe=False, status=200)
 
 
 def inzeraty_id(request, inzerat_id):
-    try:
-        inz = models.Feed.objects.get(pk=inzerat_id)
-        inz = dict(inz.objects.values())
-        return JsonResponse(inz, safe=False, status=200)
-    except models.Feed.DoesNotExist:
-        return HttpResponseNotFound("Inzerat s tymto id neexistuje")
+    if request.method == 'GET':
+        try:
+            inz = models.Feed.objects.get(pk=inzerat_id)
+            inz = dict(inz.objects.values())
+            return JsonResponse(inz, safe=False, status=200)
+        except models.Feed.DoesNotExist:
+            return HttpResponseNotFound("Inzerat s tymto id neexistuje")
 
 
 def inzeraty_all(request):
