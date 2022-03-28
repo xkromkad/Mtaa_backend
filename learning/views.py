@@ -1,15 +1,10 @@
 from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
 from learning import models
 import json
-from django.http import JsonResponse
-from learning import serializers
-from django.forms.models import model_to_dict
+from django.core import serializers
+from django.utils import timezone
 
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the polls index.")
 
 @csrf_exempt
 def login(request):
@@ -41,7 +36,7 @@ def register(request):
 
         return JsonResponse(registered_data, safe=False, status=200)
 
-
+@csrf_exempt
 def inzeraty_id(request, inzerat_id):
     if request.method == 'GET':
         try:
@@ -50,6 +45,9 @@ def inzeraty_id(request, inzerat_id):
             return JsonResponse(inz, safe=False, status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
+    if request.method == 'DELETE':
+        models.Feed.objects.filter(pk=inzerat_id).first().delete()
+        return HttpResponse(status=204)
 
 """
 def inzeraty_all(request):
@@ -69,12 +67,26 @@ def users_id(request, user_id):
         except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
 
-
-"""
-def list(request):
+@csrf_exempt
+def inzeraty_list(request):
     if request.method == 'GET':
         data = serializers.serialize('json', models.Feed.objects.all())
         return HttpResponse(data, status=200)
-    return JsonResponse(status=401)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        models.Feed(title = data['title'],
+                    description = data['description'],
+                    created_at = timezone.now(),
+                    updated_at = timezone.now(),
+                    user = models.Users.objects.first()).save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=401)
 
-"""
+# posielam v post na /inzeraty
+'''
+{
+    "title": "Pravdepodobnosť",
+    "description": "Chcel by som sa naučiť kombinácie s opakovaním."
+}
+'''
+

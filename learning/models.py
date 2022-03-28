@@ -16,7 +16,7 @@ class Users(models.Model):
 class Feed(models.Model):
     class Meta:
         db_table = 'Feed'
-    user_id = models.ForeignKey(Users, on_delete=models.CASCADE)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
     title = models.CharField(max_length=30)
     description = models.CharField(max_length=300)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -39,8 +39,8 @@ class Chats(models.Model):
 class Chat_users(models.Model):
     class Meta:
         db_table = 'Chat_users'
-    user_id = models.ForeignKey(Users, on_delete=models.CASCADE)
-    chat_id = models.ForeignKey(Chats, on_delete=models.CASCADE)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chats, on_delete=models.CASCADE)
 
 
 class Messages(models.Model):

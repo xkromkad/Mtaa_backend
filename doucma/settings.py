@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
 
 ]
 
@@ -79,7 +81,7 @@ WSGI_APPLICATION = 'doucma.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'doucmaDb',
+        'NAME': 'doucmadb',
         'HOST': 'localhost',
         'USER': 'postgres',
         'PASSWORD': os.getenv('password')
