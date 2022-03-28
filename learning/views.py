@@ -1,8 +1,11 @@
 from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
-
+from django.contrib.auth.models import User
 from learning import models
-from .models import Feed
+import json
+from django.http import JsonResponse
+from django.core import serializers
+from django.forms.models import model_to_dict
 
 
 def index(request):
@@ -11,10 +14,12 @@ def index(request):
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        r = Feed.objects.get(pk=1)
+        r = models.Feed.objects.get(pk=1)
         return HttpResponse(request.POST['name'])
     if request.method == 'DELETE':
         return HttpResponse('delete')
+    if request.method == 'GET':
+        return JsonResponse({'method': 'get'})
 
 
 def register(request):
@@ -26,7 +31,7 @@ def inzeraty_id(request, inzerat_id):
         inz = models.Feed.objects.get(pk=inzerat_id)
         inz = dict(inz.objects.values())
         return JsonResponse(inz, safe=False, status=200)
-    except Feed.DoesNotExist:
+    except models.Feed.DoesNotExist:
         return HttpResponseNotFound("Inzerat s tymto id neexistuje")
 
 
@@ -41,4 +46,10 @@ def users_id(request, user_id):
     user = dict(models.Users.objects.values())
     return JsonResponse(user, safe=False, status=200)
 
+
+def list(request):
+    if request.method == 'GET':
+        data = serializers.serialize('json', models.Feed.objects.all())
+        return HttpResponse(data, status=200)
+    return JsonResponse(status=401)
 
