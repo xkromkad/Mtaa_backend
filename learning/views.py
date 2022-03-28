@@ -48,6 +48,22 @@ def inzeraty_id(request, inzerat_id):
     if request.method == 'DELETE':
         models.Feed.objects.filter(pk=inzerat_id).first().delete()
         return HttpResponse(status=204)
+    if request.method == 'PUT':
+        model = models.Feed.objects.filter(pk=inzerat_id).first()
+        data = json.loads(request.body)
+        if 'title' in data:
+            model.title = data['title']
+        if 'description' in data:
+            model.description = data['description']
+        model.save()
+        return HttpResponse(status=200)
+
+"""
+{
+    "title": "Python programming",
+    "description": "Chcel by som vedieť cykly a funkcie."
+}
+"""
 
 """
 def inzeraty_all(request):
