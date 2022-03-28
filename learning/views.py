@@ -5,6 +5,16 @@ import json
 from django.core import serializers
 from django.utils import timezone
 
+# todo:
+# Registrácia s uložením do db
+# login
+# autorizácia cez tokeny
+# posielanie fotky
+# vytvorenie chatu
+# vytvorenie chat group
+# pridanie súboru k inzerátu, posielanie súborov
+# vytvoriť swagger
+# aktualizácia dokumentácie
 
 @csrf_exempt
 def login(request):
@@ -73,7 +83,7 @@ def inzeraty_all(request):
     return JsonResponse(inzs, safe=False, status=200)
 """
 
-
+@csrf_exempt
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
@@ -82,6 +92,27 @@ def users_id(request, user_id):
             return JsonResponse(valuees, safe=False, status=200)
         except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
+    if request.method == 'PUT':
+        model = models.Users.objects.filter(pk=user_id).first()
+        print(model)
+        data = json.loads(request.body)
+        if 'name' in data:
+            model.name = data['name']
+        if 'surname' in data:
+            model.surname = data['surname']
+        if 'email' in data:
+            model.email = data['email']
+        if 'password' in data:
+            model.password = data['password']
+        if 'photo' in data:
+            model.photo = data['photo']
+        model.save()
+        return HttpResponse(status=200)
+    if request.method == 'DELETE':
+        models.Users.objects.filter(pk=user_id).first().delete()
+        return HttpResponse(status=204)
+
+
 
 @csrf_exempt
 def inzeraty_list(request):
