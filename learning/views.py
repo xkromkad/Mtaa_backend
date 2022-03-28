@@ -27,7 +27,7 @@ def login(request):
         return JsonResponse({'method': 'get'})
 
 @csrf_exempt
-def register(request):
+def reg(request):
     if request.method == 'POST':
         i = 0
         while 1:
@@ -45,6 +45,21 @@ def register(request):
             registered_data = serializer.errors
 
         return JsonResponse(registered_data, safe=False, status=200)
+
+@csrf_exempt
+def register(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        if data['email'] == models.Users.objects.filter(email=data['email']).first().email:
+            return HttpResponse('Already used email '+data['email'], status=405)
+        models.Users(name = data['name'],
+                     surname = data['surname'],
+                     email = data['email'],
+                     password = data['password'],
+                     photo = data['photo'],
+                     created_at = timezone.now(),
+                     updated_at = timezone.now()).save()
+        return HttpResponse(status=200)
 
 @csrf_exempt
 def inzeraty_id(request, inzerat_id):
@@ -112,6 +127,10 @@ def users_id(request, user_id):
         models.Users.objects.filter(pk=user_id).first().delete()
         return HttpResponse(status=204)
 
+{
+    "name": "Martin",
+    "surname": "Nejaký"
+}
 
 
 @csrf_exempt
