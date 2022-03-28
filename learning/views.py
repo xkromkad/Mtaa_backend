@@ -2,10 +2,9 @@ from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from learning import models
-from learning import serializers
 import json
 from django.http import JsonResponse
-from django.core import serializers
+from rest_framework import serializers
 from django.forms.models import model_to_dict
 
 
@@ -22,11 +21,22 @@ def login(request):
     if request.method == 'GET':
         return JsonResponse({'method': 'get'})
 
-
+@csrf_exempt
 def register(request):
     if request.method == 'POST':
-        serializer = serializers.UserSerializer(data=request.data)
-        registered = serializer.save()
+        i = 0
+        while 1:
+            i += 1
+            try:
+                one_user = models.Users.objects.get(pk=i)
+            except models.Users.DoesNotExist:
+                break
+
+        registered = json.loads(request.body)
+        registered['id'] = i
+        new_user = models.Users(**registered)
+        new_user.save()
+        queryset = dict(User.objects.values())
 
         return JsonResponse(registered, safe=False, status=200)
 
@@ -40,17 +50,23 @@ def inzeraty_id(request, inzerat_id):
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
 
-
+"""
 def inzeraty_all(request):
    # inz = models.Feed.objects.get(pk=inzerat_id)
     # inz = dict(inz.objects.values())
     inzs = list(models.Feed.objects.values())
     return JsonResponse(inzs, safe=False, status=200)
+"""
+
 
 def users_id(request, user_id):
-
-    user = dict(models.Users.objects.values())
-    return JsonResponse(user, safe=False, status=200)
+    if request.method == 'GET':
+        try:
+            userik = models.Feed.objects.get(pk=user_id)
+            userik  = dict(userik.objects.values())
+            return JsonResponse(userik, safe=False, status=200)
+        except models.Feed.DoesNotExist:
+            return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
 
 
 def list(request):
