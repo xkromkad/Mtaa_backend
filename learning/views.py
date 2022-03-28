@@ -32,17 +32,13 @@ def register(request):
             except models.Users.DoesNotExist:
                 break
         serializer = serializers.UserSerializer(data=json.loads(request.body))
-
         if serializer.is_valid():
+            serializer.id = i
             person = serializer.save()
             registered_data = {'id': person.id, 'email': person.email, 'message': "pouzivatel bol uspesne vytvoreny"}
         else:
             registered_data = serializer.errors
 
-        registered = json.loads(request.body)
-        registered['id'] = i
-        new_user = models.Users(**registered)
-        new_user.save()
         return JsonResponse(registered_data, safe=False, status=200)
 
 
