@@ -63,9 +63,9 @@ def inzeraty_all(request):
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
-
-            userik = dict(models.Users.objects.get(pk=user_id))
-            return JsonResponse(userik, safe=False, status=200)
+            userik = models.Users.objects.get(pk=user_id)
+            valuees = {"name": userik.name, "email": userik.email,"photo":userik.photo}
+            return JsonResponse(valuees, safe=False, status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
 
