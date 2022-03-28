@@ -14,7 +14,7 @@ def index(request):
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        r = models.Feed.objects.get(pk=1)
+        r = models.Feed.objects.all()
         return HttpResponse(request.POST['name'])
     if request.method == 'DELETE':
         return HttpResponse('delete')
@@ -66,7 +66,7 @@ def users_id(request, user_id):
             userik = models.Users.objects.get(pk=user_id)
             valuees = {"name": userik.name, "email": userik.email,"photo":userik.photo}
             return JsonResponse(valuees, safe=False, status=200)
-        except models.Feed.DoesNotExist:
+        except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
 
 

@@ -6,7 +6,10 @@ urlpatterns = [
     path('registracia', views.register, name='registracia'),
     path('inzeraty/<inzerat_id>', views.inzeraty_id, name='inzeraty_id'),
     path('pouzivatelia/<user_id>', views.users_id, name='users_id'),
-   # path('inzeraty', views.list, name='list'),
+    # path('inzeraty', views.list, name='list'),
     # path('registracia', views.register, name='registracia'),
+    # path('pouzivatel/<pouzivatel-id>/uprava ', views.user_settings, name = 'user_settings),
+    # path('pouzivatel/<pouzivatel-id>', views.user, name = 'user'),
+    # 
 
 ]
