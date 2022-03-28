@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from learning import models
@@ -10,8 +13,6 @@ from django.utils import timezone
 # login
 # autorizácia cez tokeny
 # posielanie fotky
-# vytvorenie chatu
-# vytvorenie chat group
 # pridanie súboru k inzerátu, posielanie súborov
 # vytvoriť swagger
 # aktualizácia dokumentácie
@@ -19,12 +20,18 @@ from django.utils import timezone
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        r = models.Feed.objects.all()
-        return HttpResponse(request.POST['name'])
-    if request.method == 'DELETE':
-        return HttpResponse('delete')
-    if request.method == 'GET':
-        return JsonResponse({'method': 'get'})
+        if request.FILES.get("image", None) is not None:
+            img = request.FILES["image"]
+            img_extension = os.path.splitext(img.name)[1]
+            save_path = "learning//images"
+            img_save_path = "%s/%s%s" % (save_path, str(uuid.uuid4()), img_extension)
+            with open(img_save_path, "wb+") as f:
+                for chunk in img.chunks():
+                    f.write(chunk)
+
+
+
+        return HttpResponse('ahoj')
 
 @csrf_exempt
 def reg(request):
@@ -49,14 +56,25 @@ def reg(request):
 @csrf_exempt
 def register(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        if data['email'] == models.Users.objects.filter(email=data['email']).first().email:
+        data = json.loads(request.POST['req'])
+        email = models.Users.objects.filter(email=data['email']).first()
+        if email is not None and data['email'] == email.email:
             return HttpResponse('Already used email '+data['email'], status=405)
+    if request.FILES.get("image", None) is None:
+        return HttpResponse(status=400)
+    img = request.FILES["image"]
+    img_extension = os.path.splitext(img.name)[1]
+    save_path = "learning/images"
+    img_name = str(uuid.uuid4())
+    img_save_path = "%s/%s%s" % (save_path, img_name, img_extension)
+    with open(img_save_path, "wb+") as f:
+        for chunk in img.chunks():
+            f.write(chunk)
         models.Users(name = data['name'],
                      surname = data['surname'],
                      email = data['email'],
                      password = data['password'],
-                     photo = data['photo'],
+                     photo = img_name,
                      created_at = timezone.now(),
                      updated_at = timezone.now()).save()
         return HttpResponse(status=200)
