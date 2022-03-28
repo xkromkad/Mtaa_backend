@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from learning import models
 import json
 from django.http import JsonResponse
-from rest_framework import serializers
+from learning import serializers
 from django.forms.models import model_to_dict
 
 
@@ -31,14 +31,19 @@ def register(request):
                 one_user = models.Users.objects.get(pk=i)
             except models.Users.DoesNotExist:
                 break
+        serializer = serializers.UserSerializer(data=json.loads(request.body))
+
+        if serializer.is_valid():
+            person = serializer.save()
+            registered_data = {'id': person.id, 'email': person.email, 'message': "pouzivatel bol uspesne vytvoreny"}
+        else:
+            registered_data = serializer.errors
 
         registered = json.loads(request.body)
         registered['id'] = i
         new_user = models.Users(**registered)
         new_user.save()
-        queryset = dict(User.objects.values())
-
-        return JsonResponse(registered, safe=False, status=200)
+        return JsonResponse(registered_data, safe=False, status=200)
 
 
 def inzeraty_id(request, inzerat_id):
@@ -62,16 +67,18 @@ def inzeraty_all(request):
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
-            userik = models.Feed.objects.get(pk=user_id)
-            userik  = dict(userik.objects.values())
+
+            userik = dict(models.Users.objects.get(pk=user_id))
             return JsonResponse(userik, safe=False, status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
 
 
+"""
 def list(request):
     if request.method == 'GET':
         data = serializers.serialize('json', models.Feed.objects.all())
         return HttpResponse(data, status=200)
     return JsonResponse(status=401)
 
+"""
