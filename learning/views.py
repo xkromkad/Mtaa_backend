@@ -7,6 +7,10 @@ import json
 from django.core import serializers
 from django.utils import timezone
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
 # todo:
 # login
 # autorizácia cez tokeny
@@ -18,17 +22,7 @@ from django.utils import timezone
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        if request.FILES.get("image", None) is not None:
-            img = request.FILES["image"]
-            img_extension = os.path.splitext(img.name)[1]
-            save_path = "learning//images"
-            img_save_path = "%s/%s%s" % (save_path, str(uuid.uuid4()), img_extension)
-            with open(img_save_path, "wb+") as f:
-                for chunk in img.chunks():
-                    f.write(chunk)
-
-
-
+        permission_classes = (IsAuthenticated,)
         return HttpResponse('ahoj')
 
 @csrf_exempt
@@ -138,8 +132,7 @@ def users_id(request, user_id):
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
     if request.method == 'PUT':
         model = models.Users.objects.filter(pk=user_id).first()
-        print(model)
-        data = json.loads(request.body)
+        data = json.loads(request.POST['content'])
         if 'name' in data:
             model.name = data['name']
         if 'surname' in data:
