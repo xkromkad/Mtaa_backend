@@ -74,7 +74,7 @@ def register(request):
                      surname = data['surname'],
                      email = data['email'],
                      password = data['password'],
-                     photo = img_name,
+                     photo = img_name+img_extension,
                      created_at = timezone.now(),
                      updated_at = timezone.now()).save()
         return HttpResponse(status=200)
@@ -89,7 +89,12 @@ def inzeraty_id(request, inzerat_id):
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
-        models.Feed.objects.filter(pk=inzerat_id).first().delete()
+        model = models.Feed.objects.filter(pk=inzerat_id).first()
+        try:
+            os.remove("learning/images/{0}".format(model.photo))
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
+        model.delete()
         return HttpResponse(status=204)
     if request.method == 'PUT':
         model = models.Feed.objects.filter(pk=inzerat_id).first()
