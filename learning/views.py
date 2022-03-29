@@ -1,6 +1,5 @@
 import os
 import uuid
-
 from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from learning import models
@@ -81,10 +80,18 @@ def register(request):
 @csrf_exempt
 def inzeraty_id(request, inzerat_id):
     if request.method == 'GET':
+        if models.Files.objects.filter(feed=inzerat_id) is not None:
+            files = models.Files.objects.filter(feed=inzerat_id)
+            file_arr = []
+            for item in files:
+                with open('learning/files/{0}'.format(item.file_name), "rb") as f:
+                    file = f.read()
+                    file_type = os.path.splitext('321bc5cc-7ac4-450a-af5d-1263dc4cedc9.jpg')[1]
+                    file_arr.append([file, file_type])
         try:
-            inz = models.Feed.objects.get(pk=inzerat_id)
-            inz = dict(inz.objects.values())
-            return JsonResponse(inz, safe=False, status=200)
+            model = models.Feed.objects.filter(pk=inzerat_id)
+            data = serializers.serialize("json", model)
+            return HttpResponse([file_arr, data], status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
