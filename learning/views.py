@@ -9,7 +9,6 @@ from django.core import serializers
 from django.utils import timezone
 
 # todo:
-# Registrácia s uložením do db
 # login
 # autorizácia cez tokeny
 # posielanie fotky
@@ -162,12 +161,24 @@ def inzeraty_list(request):
         data = serializers.serialize('json', models.Feed.objects.all())
         return HttpResponse(data, status=200)
     if request.method == 'POST':
-        data = json.loads(request.body)
-        models.Feed(title = data['title'],
+        data = json.loads(request.POST['content'])
+        model = models.Feed(title = data['title'],
                     description = data['description'],
                     created_at = timezone.now(),
                     updated_at = timezone.now(),
-                    user = models.Users.objects.first()).save()
+                    user = models.Users.objects.first())
+        model.save()
+        if request.FILES.get("file", None) is not None:
+            for file in request.FILES.getlist('file'):
+                extension = os.path.splitext(file.name)[1]
+                save_path = "learning/files"
+                name = str(uuid.uuid4())
+                save_path = "%s/%s%s" % (save_path, name, extension)
+                with open(save_path, "wb+") as f:
+                    for chunk in file.chunks():
+                        f.write(chunk)
+                models.Files(file_name=name+extension,
+                             feed=model).save()
         return HttpResponse(status=200)
     return HttpResponse(status=401)
 

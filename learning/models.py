@@ -26,7 +26,7 @@ class Feed(models.Model):
 class Files(models.Model):
     class Meta:
         db_table = 'Files'
-    feed_id = models.ForeignKey(Feed, on_delete=models.CASCADE)
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     file_name = models.CharField(max_length=50)
 
 
