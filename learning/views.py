@@ -2,102 +2,108 @@ import os
 import uuid
 from django.http import HttpResponse, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
-from learning import models
+from . import models
 import json
 from django.core import serializers
 from django.utils import timezone
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
-# todo:
-# login
-# autorizácia cez tokeny
-# posielanie fotky
-# pridanie súboru k inzerátu, posielanie súborov
-# vytvoriť swagger
-# aktualizácia dokumentácie
+def authenticate(request, model):
+    if 'token' in request.headers:
+        user = models.token.objects.filter(token=request.headers['token']).first()
+        if user is not None:
+            if user.user_id == model:
+                return True
+    return False
+
 
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        permission_classes = (IsAuthenticated,)
-        return HttpResponse('ahoj')
-
-@csrf_exempt
-def reg(request):
-    if request.method == 'POST':
-        i = 0
-        while 1:
-            i += 1
-            try:
-                one_user = models.Users.objects.get(pk=i)
-            except models.Users.DoesNotExist:
-                break
-        serializer = serializers.UserSerializer(data=json.loads(request.body))
-        if serializer.is_valid():
-            serializer.id = i
-            person = serializer.save()
-            registered_data = {'id': person.id, 'email': person.email, 'message': "pouzivatel bol uspesne vytvoreny"}
-        else:
-            registered_data = serializer.errors
-
-        return JsonResponse(registered_data, safe=False, status=200)
+        data = json.loads(request.body)
+        if 'email' and 'password' not in data:
+            return HttpResponse(status=401)
+        model = models.Users.objects.filter(email=data['email'], password=data['password']).first()
+        if model is not None:
+            tok = models.token.objects.filter(user=model).first()
+            if tok is not None:
+                id = tok.token
+            else:
+                id = str(uuid.uuid4())
+                models.token(token=id,
+                             user=model).save()
+            response = HttpResponse(status=200)
+            response["token"] = id
+            return response
+        return HttpResponse(status=401)
 
 @csrf_exempt
 def register(request):
     if request.method == 'POST':
-        data = json.loads(request.POST['req'])
+        data = json.loads(request.body)['req']
         email = models.Users.objects.filter(email=data['email']).first()
         if email is not None and data['email'] == email.email:
             return HttpResponse('Already used email '+data['email'], status=405)
-    if request.FILES.get("image", None) is None:
-        return HttpResponse(status=400)
-    img = request.FILES["image"]
-    img_extension = os.path.splitext(img.name)[1]
-    save_path = "learning/images"
-    img_name = str(uuid.uuid4())
-    img_save_path = "%s/%s%s" % (save_path, img_name, img_extension)
-    with open(img_save_path, "wb+") as f:
-        for chunk in img.chunks():
-            f.write(chunk)
-        models.Users(name = data['name'],
-                     surname = data['surname'],
-                     email = data['email'],
-                     password = data['password'],
-                     photo = img_name+img_extension,
-                     created_at = timezone.now(),
-                     updated_at = timezone.now()).save()
-        return HttpResponse(status=200)
+    if request.FILES.get("image", None) is not None:
+        img = request.FILES["image"]
+        img_extension = os.path.splitext(img.name)[1]
+        save_path = "learning/images"
+        img_name = str(uuid.uuid4())
+        img_save_path = "%s/%s%s" % (save_path, img_name, img_extension)
+        with open(img_save_path, "wb+") as f:
+            for chunk in img.chunks():
+                f.write(chunk)
+        image = img_name + img_extension
+    else:
+        image = 'None.png'
+    model = models.Users(name = data['name'],
+                 surname = data['surname'],
+                 email = data['email'],
+                 password = data['password'],
+                 photo = image,
+                 created_at = timezone.now(),
+                 updated_at = timezone.now())
+    model.save()
+    id = str(uuid.uuid4())
+    models.token(token=id,
+                 user=model).save()
+    response = HttpResponse(status=200)
+    response["token"] = id
+    return response
 
 @csrf_exempt
 def inzeraty_id(request, inzerat_id):
     if request.method == 'GET':
         if models.Files.objects.filter(feed=inzerat_id) is not None:
             files = models.Files.objects.filter(feed=inzerat_id)
-            file_arr = []
+            file_name = []
             for item in files:
-                with open('learning/files/{0}'.format(item.file_name), "rb") as f:
-                    file = f.read()
-                    file_type = os.path.splitext('321bc5cc-7ac4-450a-af5d-1263dc4cedc9.jpg')[1]
-                    file_arr.append([file, file_type])
+                file_name.append(item.file_name)
         try:
             model = models.Feed.objects.filter(pk=inzerat_id)
             data = serializers.serialize("json", model)
-            return HttpResponse([file_arr, data], status=200)
+            return HttpResponse([file_name, data], status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
         model = models.Feed.objects.filter(pk=inzerat_id).first()
+        if authenticate(request, model.user_id) is False:
+            return HttpResponse(status=401)
         try:
-            os.remove("learning/images/{0}".format(model.photo))
+            files = models.Files.objects.filter(feed=model)
+            if files is not None:
+                for file in files:
+                    os.remove("learning/files/{0}".format(file.file_name))
+                    file.delete()
         except OSError as e:
             print("Error: %s - %s." % (e.filename, e.strerror))
         model.delete()
         return HttpResponse(status=204)
     if request.method == 'PUT':
         model = models.Feed.objects.filter(pk=inzerat_id).first()
+        if authenticate(request, model.user_id) is False:
+            print(model.user_id)
+            return HttpResponse(status=401)
         data = json.loads(request.body)
         if 'title' in data:
             model.title = data['title']
@@ -106,33 +112,23 @@ def inzeraty_id(request, inzerat_id):
         model.save()
         return HttpResponse(status=200)
 
-"""
-{
-    "title": "Python programming",
-    "description": "Chcel by som vedieť cykly a funkcie."
-}
-"""
-
-"""
-def inzeraty_all(request):
-   # inz = models.Feed.objects.get(pk=inzerat_id)
-    # inz = dict(inz.objects.values())
-    inzs = list(models.Feed.objects.values())
-    return JsonResponse(inzs, safe=False, status=200)
-"""
-
 @csrf_exempt
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
             userik = models.Users.objects.get(pk=user_id)
-            valuees = {"name": userik.name, "email": userik.email,"photo":userik.photo}
-            return JsonResponse(valuees, safe=False, status=200)
+            values = {"name": userik.name, "email": userik.email,"photo":userik.photo}
+            item = userik.photo
+            with open('learning/images/{0}'.format(item), "rb") as f:
+                file = f.read()
+            return HttpResponse([values, file], status=200)
         except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
     if request.method == 'PUT':
         model = models.Users.objects.filter(pk=user_id).first()
-        data = json.loads(request.POST['content'])
+        if authenticate(request, model.id) is False:
+            return HttpResponse(status=401)
+        data = json.loads(request.body)
         if 'name' in data:
             model.name = data['name']
         if 'surname' in data:
@@ -141,32 +137,42 @@ def users_id(request, user_id):
             model.email = data['email']
         if 'password' in data:
             model.password = data['password']
-        if 'photo' in data:
-            model.photo = data['photo']
         model.save()
         return HttpResponse(status=200)
     if request.method == 'DELETE':
-        models.Users.objects.filter(pk=user_id).first().delete()
+        model = models.Users.objects.filter(pk=user_id).first()
+        if authenticate(request, model.id) is False:
+            return HttpResponse(status=401)
+        model.delete()
         return HttpResponse(status=204)
-
-{
-    "name": "Martin",
-    "surname": "Nejaký"
-}
 
 
 @csrf_exempt
-def inzeraty_list(request):
+def inzeraty(request):
     if request.method == 'GET':
-        data = serializers.serialize('json', models.Feed.objects.all())
-        return HttpResponse(data, status=200)
+        data = models.Feed.objects.raw(
+            'SELECT "Feed".id, "Users".id as uid, title, description, name, surname FROM "Feed" JOIN "Users" ON '
+            'user_id="Users".id')
+        response = []
+        for item in data:
+            response.append({"name": item.name, "surname": item.surname, "title": item.title,
+                             "description": item.description, "id": item.id, "uid": item.uid})
+        response = json.dumps(response)
+        return HttpResponse(response, status=200)
     if request.method == 'POST':
+        if 'token' in request.headers:
+            tk = models.token.objects.filter(token=request.headers['token']).first()
+            if tk is None:
+                return HttpResponse(status=401)
+        else:
+            return HttpResponse(status=401)
+        user = models.Users.objects.filter(pk=tk.user_id).first()
         data = json.loads(request.POST['content'])
         model = models.Feed(title = data['title'],
                     description = data['description'],
                     created_at = timezone.now(),
                     updated_at = timezone.now(),
-                    user = models.Users.objects.first())
+                    user = user)
         model.save()
         if request.FILES.get("file", None) is not None:
             for file in request.FILES.getlist('file'):
@@ -182,11 +188,17 @@ def inzeraty_list(request):
         return HttpResponse(status=200)
     return HttpResponse(status=401)
 
-# posielam v post na /inzeraty
-'''
-{
-    "title": "Pravdepodobnosť",
-    "description": "Chcel by som sa naučiť kombinácie s opakovaním."
-}
-'''
+
+def get_file(request, inzerat_id):
+    if request == 'GET':
+        if models.Files.objects.filter(feed=inzerat_id) is not None:
+            files = models.Files.objects.filter(feed=inzerat_id)
+            file_arr = []
+            for item in files:
+                with open('learning/files/{0}'.format(item.file_name), "rb") as f:
+                    file = f.read()
+                    file_type = os.path.splitext(item.file_name)[1]
+                    file_arr.append([file, file_type])
+            HttpResponse(file_arr, status=200)
+    return HttpResponse(status=404)
 

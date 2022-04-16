@@ -12,6 +12,12 @@ class Users(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+class token(models.Model):
+    class Meta:
+        db_table = 'Tokens'
+    token = models.CharField(max_length=36)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+
 
 class Feed(models.Model):
     class Meta:
