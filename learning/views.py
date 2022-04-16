@@ -80,10 +80,16 @@ def inzeraty_id(request, inzerat_id):
             file_name = []
             for item in files:
                 file_name.append(item.file_name)
+            file_arr = json.dumps({"file_arr": file_name})
+        else:
+            file_arr = None
         try:
-            model = models.Feed.objects.filter(pk=inzerat_id)
-            data = serializers.serialize("json", model)
-            return HttpResponse([file_name, data], status=200)
+            model = models.Feed.objects.select_related('user').filter(pk=inzerat_id)
+            print(model[0].title)
+            data = json.dumps({"id": model[0].id, "title": model[0].title, "description": model[0].description,
+                    "user_id": model[0].user_id, "name": model[0].user.name, "surname": model[0].user.surname})
+            response = json.dumps({"data": data, "file_arr": file_arr})
+            return HttpResponse(response, status=200)
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
