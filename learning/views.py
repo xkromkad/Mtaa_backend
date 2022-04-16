@@ -17,6 +17,7 @@ def authenticate(request, model):
     return False
 
 
+
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
@@ -183,7 +184,7 @@ def inzeraty(request):
                 with open(save_path, "wb+") as f:
                     for chunk in file.chunks():
                         f.write(chunk)
-                models.Files(file_name=name+extension,
+                models.Files(file_name=name + extension,
                              feed=model).save()
         return HttpResponse(status=200)
     return HttpResponse(status=401)
