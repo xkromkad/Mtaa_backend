@@ -174,9 +174,8 @@ def inzeraty(request):
         else:
             return HttpResponse(status=401)
         user = models.Users.objects.filter(pk=tk.user_id).first()
-        data = json.loads(request.POST['content'])
-        model = models.Feed(title = data['title'],
-                    description = data['description'],
+        model = models.Feed(title = request.POST['title'],
+                    description = request.POST['description'],
                     created_at = timezone.now(),
                     updated_at = timezone.now(),
                     user = user)
