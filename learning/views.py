@@ -196,7 +196,7 @@ def inzeraty(request):
 
 
 def get_file(request, inzerat_id):
-    if request == 'GET':
+    if request.method == 'GET':
         if models.Files.objects.filter(feed=inzerat_id) is not None:
             files = models.Files.objects.filter(feed=inzerat_id)
             file_arr = []
@@ -205,6 +205,6 @@ def get_file(request, inzerat_id):
                     file = f.read()
                     file_type = os.path.splitext(item.file_name)[1]
                     file_arr.append([file, file_type])
-            HttpResponse(file_arr, status=200)
+            return HttpResponse(file, content_type='application/png', status=200)
     return HttpResponse(status=404)
 
