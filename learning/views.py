@@ -69,9 +69,20 @@ def register(request):
     id = str(uuid.uuid4())
     models.token(token=id,
                  user=model).save()
-    response = HttpResponse(status=200)
+
+    response = HttpResponse(json.dumps({"id": model.id}), status=200)
     response["token"] = id
     return response
+
+def inzerat_user(request, user_id):
+    if request.method == 'GET':
+        model = models.Feed.objects.select_related('user').filter(user_id=user_id)
+        response = []
+        for item in model:
+            response.append({"name": item.user.name, "surname": item.user.surname, "title": item.title,
+                             "description": item.description, "id": item.id, "uid": item.user.id})
+        response = json.dumps(response)
+        return HttpResponse(response, status=200)
 
 @csrf_exempt
 def inzeraty_id(request, inzerat_id):
