@@ -6,6 +6,7 @@ from . import models
 import json
 from django.core import serializers
 from django.utils import timezone
+import base64
 
 
 def authenticate(request, model):
@@ -123,12 +124,16 @@ def inzeraty_id(request, inzerat_id):
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
-            userik = models.Users.objects.get(pk=user_id)
-            values = {"name": userik.name, "email": userik.email,"photo":userik.photo}
+            print('tu')
+            userik = models.Users.objects.get(email=user_id)
             item = userik.photo
             with open('learning/images/{0}'.format(item), "rb") as f:
                 file = f.read()
-            return HttpResponse([values, file], status=200)
+                file = base64.b64encode(file).decode('utf-8')
+            values = {"name": userik.name, "surname": userik.surname,
+                      "email": userik.email, "photo": userik.photo, "file": file}
+            print(file)
+            return HttpResponse(json.dumps(values), status=200)
         except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
     if request.method == 'PUT':
@@ -205,6 +210,9 @@ def get_file(request, inzerat_id):
                     file = f.read()
                     file_type = os.path.splitext(item.file_name)[1]
                     file_arr.append([file, file_type])
-            return HttpResponse(file, content_type='application/png', status=200)
+            print(base64.b64encode(file))
+            file = base64.b64encode(file).decode('utf-8')
+            js = json.dumps({"file": file})
+            return HttpResponse(js, status=200)
     return HttpResponse(status=404)
 
