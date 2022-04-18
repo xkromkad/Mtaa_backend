@@ -105,6 +105,7 @@ def inzeraty_id(request, inzerat_id):
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
+        print(request.headers)
         model = models.Feed.objects.filter(pk=inzerat_id).first()
         if authenticate(request, model.user_id) is False:
             return HttpResponse(status=401)
