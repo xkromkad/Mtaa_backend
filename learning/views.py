@@ -148,19 +148,18 @@ def users_id(request, user_id):
             return HttpResponse(json.dumps(values), status=200)
         except models.Users.DoesNotExist:
             return HttpResponseNotFound("Pouzivatel s tymto id neexistuje")
-    if request.method == 'PUT':
+    if request.method == 'POST':
         model = models.Users.objects.filter(pk=user_id).first()
         if authenticate(request, model.id) is False:
             return HttpResponse(status=401)
-        data = json.loads(request.body)
-        if 'name' in data:
-            model.name = data['name']
-        if 'surname' in data:
-            model.surname = data['surname']
-        if 'email' in data:
-            model.email = data['email']
-        if 'password' in data:
-            model.password = data['password']
+        if 'name' in request.POST:
+            model.name = request.POST['name']
+        if 'surname' in request.POST:
+            model.surname = request.POST['surname']
+        if 'email' in request.POST:
+            model.email = request.POST['email']
+        if 'password' in request.POST:
+            model.password = request.POST['password']
         if request.FILES.get("file", None) is not None:
             for file in request.FILES.getlist('file'):
                 extension = os.path.splitext(file.name)[1]
@@ -170,6 +169,7 @@ def users_id(request, user_id):
                 with open(save_path, "wb+") as f:
                     for chunk in file.chunks():
                         f.write(chunk)
+                print(name+extension)
                 model.photo = name + extension
         model.save()
         return HttpResponse(status=200)
@@ -196,7 +196,7 @@ def create_chat(request):
             return HttpResponse(status=401)
         chat1 = models.Chat_users.objects.filter(user_id=author) # check if chat exists
         chat2 = models.Chat_users.objects.filter(user_id=author)
-        chat = chat1.objects.filter(chat_id=chat2.chat_id).first()
+        chat = chat1.filter(chat_id=chat2.chat_id).first()
         if chat is not None:
             return HttpResponse(json.dumps({"id": chat.id}), status=200)
         chatModel = models.Chats(created_at = timezone.now()).save()
