@@ -34,7 +34,9 @@ def login(request):
                 id = str(uuid.uuid4())
                 models.token(token=id,
                              user=model).save()
-            response = HttpResponse(status=200)
+            data = {"id": model.id, "name": model.name, "surname": model.surname, "email": model.email}
+            data = json.dumps(data)
+            response = HttpResponse(data, status=200)
             response["token"] = id
             return response
         return HttpResponse(status=401)
@@ -161,6 +163,16 @@ def users_id(request, user_id):
             model.email = data['email']
         if 'password' in data:
             model.password = data['password']
+        if request.FILES.get("file", None) is not None:
+            for file in request.FILES.getlist('file'):
+                extension = os.path.splitext(file.name)[1]
+                save_path = "learning/images"
+                name = str(uuid.uuid4())
+                save_path = "%s/%s%s" % (save_path, name, extension)
+                with open(save_path, "wb+") as f:
+                    for chunk in file.chunks():
+                        f.write(chunk)
+                model.photo = name + extension
         model.save()
         return HttpResponse(status=200)
     if request.method == 'DELETE':
