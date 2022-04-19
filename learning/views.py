@@ -107,7 +107,6 @@ def inzeraty_id(request, inzerat_id):
         except models.Feed.DoesNotExist:
             return HttpResponseNotFound("Inzerat s tymto id neexistuje")
     if request.method == 'DELETE':
-        print(request.headers)
         model = models.Feed.objects.filter(pk=inzerat_id).first()
         if authenticate(request, model.user_id) is False:
             return HttpResponse(status=401)
@@ -138,7 +137,6 @@ def inzeraty_id(request, inzerat_id):
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
-            print('tu')
             userik = models.Users.objects.get(email=user_id)
             item = userik.photo
             with open('learning/images/{0}'.format(item), "rb") as f:
@@ -181,6 +179,30 @@ def users_id(request, user_id):
             return HttpResponse(status=401)
         model.delete()
         return HttpResponse(status=204)
+
+@csrf_exempt
+def create_chat(request):
+    if request.method == 'POST':
+        if 'token' in request.headers:
+            tk = models.token.objects.filter(token=request.headers['token']).first()
+            if tk is None:
+                return HttpResponse(status=401)
+        else:
+            return HttpResponse(status=401)
+        data = json.loads(request.body)
+        author = models.Users.objects.filter(id=data['author']).first()
+        cuser = models.Users.objects.filter(id=data['user']).first()
+        if author is None or cuser is None:
+            return HttpResponse(status=401)
+        chat1 = models.Chat_users.objects.filter(user_id=author) # check if chat exists
+        chat2 = models.Chat_users.objects.filter(user_id=author)
+        chat = chat1.objects.filter(chat_id=chat2.chat_id).first()
+        if chat is not None:
+            return HttpResponse(json.dumps({"id": chat.id}), status=200)
+        chatModel = models.Chats(created_at = timezone.now()).save()
+        models.Chat_users(chat_id=chatModel, user_id=author).save()
+        models.Chat_users(chat_id=chatModel, user_id=cuser).save()
+        return HttpResponse(json.dumps({"id": chatModel.id}), status=200)
 
 
 @csrf_exempt
