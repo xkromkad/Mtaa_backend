@@ -7,6 +7,7 @@ import json
 from django.core import serializers
 from django.utils import timezone
 import base64
+from django.db.models import Q, Count
 
 
 def authenticate(request, model):
@@ -99,7 +100,6 @@ def inzeraty_id(request, inzerat_id):
             file_arr = None
         try:
             model = models.Feed.objects.select_related('user').filter(pk=inzerat_id)
-            print(model[0].title)
             data = json.dumps({"id": model[0].id, "title": model[0].title, "description": model[0].description,
                     "user_id": model[0].user_id, "name": model[0].user.name, "surname": model[0].user.surname})
             response = json.dumps({"data": data, "file_arr": file_arr})
@@ -194,14 +194,17 @@ def create_chat(request):
         cuser = models.Users.objects.filter(id=data['user']).first()
         if author is None or cuser is None:
             return HttpResponse(status=401)
-        chat1 = models.Chat_users.objects.filter(user_id=author) # check if chat exists
-        chat2 = models.Chat_users.objects.filter(user_id=author)
-        chat = chat1.filter(chat_id=chat2.chat_id).first()
-        if chat is not None:
-            return HttpResponse(json.dumps({"id": chat.id}), status=200)
-        chatModel = models.Chats(created_at = timezone.now()).save()
-        models.Chat_users(chat_id=chatModel, user_id=author).save()
-        models.Chat_users(chat_id=chatModel, user_id=cuser).save()
+        chat = models.Chat_users.objects.filter(Q(user_id=author) | Q(user_id=cuser)).values('chat_id')\
+            .annotate(total=Count('chat_id'))
+        if len(chat) > 0:
+            for item in chat:
+                if item['total']>1:
+                    chat = item
+                    return HttpResponse(json.dumps({"id": chat['chat_id']}), status=200)
+        chatModel = models.Chats(created_at = timezone.now())
+        chatModel.save()
+        models.Chat_users(chat_id=chatModel.id, user_id=author.id).save()
+        models.Chat_users(chat_id=chatModel.id, user_id=cuser.id).save()
         return HttpResponse(json.dumps({"id": chatModel.id}), status=200)
 
 
@@ -262,3 +265,26 @@ def get_file(request, inzerat_id):
             return HttpResponse(js, status=200)
     return HttpResponse(status=404)
 
+@csrf_exempt
+def search(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        if 'content' not in data:
+            return HttpResponse(status=401)
+        model = models.Feed.objects.select_related('user').filter(title__icontains=data['content'])
+        response = []
+        for item in model:
+            response.append({"name": item.user.name, "surname": item.user.surname, "title": item.title,
+                         "description": item.description, "id": item.id, "uid": item.user.id})
+    response = json.dumps(response)
+    print(response)
+    return HttpResponse(response, status=200)
+
+@csrf_exempt
+def messages(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        print(request.body)
+        id = models.Chat_users.objects.select_related('user').filter(user_id=data['id'])
+        print(id)
+        return HttpResponse(status=200)

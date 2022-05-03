@@ -9,7 +9,9 @@ urlpatterns = [
     path('inzeraty', views.inzeraty, name='list'),
     path('inzeraty/pouzivatelia/<user_id>', views.inzerat_user, name='list'),
     path('subor/<inzerat_id>', views.get_file, name='files'),
-    path('vytvorchat', views.create_chat, name='create_chat')
+    path('vytvorchat', views.create_chat, name='create_chat'),
+    path('hladat', views.search, name='search'),
+    path('spravy', views.messages, name='messages'),
     # path('/pouzivatel/inzeraty/<inzerat-id>', views.feed_edit, name = 'feed_edit')
 
 ]
