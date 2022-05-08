@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'knox'
+    'knox',
+    'channels'
 ]
 
 REST_FRAMEWORK = dict(DEFAULT_AUTHENTICATION_CLASSES=('knox.auth.TokenAuthentication',),
@@ -76,7 +77,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'doucma.wsgi.application'
-
+ASGI_APPLICATION = "doucma.routing.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
