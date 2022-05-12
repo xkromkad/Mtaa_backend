@@ -137,7 +137,7 @@ def inzeraty_id(request, inzerat_id):
 def users_id(request, user_id):
     if request.method == 'GET':
         try:
-            userik = models.Users.objects.get(email=user_id)
+            userik = models.Users.objects.get(id=user_id)
             item = userik.photo
             with open('learning/images/{0}'.format(item), "rb") as f:
                 file = f.read()
@@ -213,7 +213,7 @@ def inzeraty(request):
     if request.method == 'GET':
         data = models.Feed.objects.raw(
             'SELECT "Feed".id, "Users".id as uid, title, description, name, surname FROM "Feed" JOIN "Users" ON '
-            'user_id="Users".id')
+            'user_id="Users".id ORDER BY "Feed".created_at DESC')
         response = []
         for item in data:
             response.append({"name": item.name, "surname": item.surname, "title": item.title,
